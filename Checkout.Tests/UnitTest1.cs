@@ -26,4 +26,63 @@ public class CheckoutTests
         Assert.Contains(bProduct, checkout.Basket);
         Assert.Equal(2, checkout.Basket[bProduct]);
     }
+
+    [Fact]
+    public void CheckOneDiscountCalculates()
+    {
+        // arrange
+        var products = new List<Product>() { aProduct, bProduct, cProduct };
+
+        var checkout = new InMemoryCheckout(products);
+
+        // act
+        checkout.Scan("A");
+        checkout.Scan("A");
+        checkout.Scan("A");
+
+        // assert
+        Assert.Equal(130m, checkout.GetTotalPrice());
+    }
+
+    [Fact]
+    public void CheckMultipleDiscountGroupCalculates()
+    {
+        // arrange
+        var products = new List<Product>() { aProduct, bProduct, cProduct };
+
+        var checkout = new InMemoryCheckout(products);
+
+        // act
+        checkout.Scan("A");
+        checkout.Scan("A");
+        checkout.Scan("A");
+
+        checkout.Scan("A");
+        checkout.Scan("A");
+        checkout.Scan("A");
+
+        // assert
+        Assert.Equal(260m, checkout.GetTotalPrice());
+    }
+
+    [Fact]
+    public void CheckMultipleProductsCalculatesWithRemainder()
+    {
+        // arrange
+        var products = new List<Product>() { aProduct, bProduct, cProduct };
+
+        var checkout = new InMemoryCheckout(products);
+
+        // act
+        checkout.Scan("A");
+        checkout.Scan("A");
+        checkout.Scan("A");
+
+        checkout.Scan("B");
+        checkout.Scan("B");
+        checkout.Scan("B"); // Discount shouldn't apply to this one
+
+        // assert
+        Assert.Equal(130m + 35m + 30m, checkout.GetTotalPrice());
+    }
 }
