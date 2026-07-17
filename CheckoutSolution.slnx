@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="checkout-kata.csproj" />
+  <Project Path="Checkout.Tests/Checkout.Tests.csproj" />
+</Solution>
