@@ -1,3 +1,13 @@
+# Solution notes
+A few assumptions have been made in solving this:
+* To make evaluation easier, I've added a console front end in Program.cs (usage: `dotnet run -- sku1 sku2 sku3` etc.)
+* Products with negative price, or offers with negative price, are not allowed
+* Totals are calculated lazily, not upon scanning. That helps save compute and time for very large orders when more and more items are added
+* A receipt-based model was used in case the program could be extended to show the customer a break down of their items
+* An offer might be seen as belonging to the product domain object, but the idea that "we need to pass in a set of pricing rules" made me decouple it, so UpdateOffers will change the offer rule set and calculation is lazy anyway, so only the data needs changing
+* SKUs are usually one letter, but any string is acceptable (good if we run out of letters in a real impl)
+* InMemoryCheckout is an implementation that keeps the basket, receipt, catalog, etc. in memory. Another implementation might store these in Redis (the basket) or SQL (the products and offers)
+
 # checkout-kata
 In a normal supermarket, products are identified using Stock Keeping Units, or SKUs. In our supermarket, we’ll use individual letters of the alphabet (A, B, C, and so on). Our goods are priced individually. In addition, some items are multipriced: buy _n_ of them, and they’ll cost you _y_. For example, item ‘A’ might cost 50 pounds individually, but this week we have a special offer; buy three ‘A’s and they’ll cost you 130. The current pricing and offers are as follows:
 
