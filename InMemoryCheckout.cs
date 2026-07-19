@@ -28,6 +28,12 @@ public class InMemoryCheckout : ICheckout
             throw new InvalidDataException($"Product catalog cannot contain duplicate SKUs: {e}");
         }
 
+        if (validProducts.Any(p => p.UnitPrice < 0))
+            throw new InvalidDataException("Product unit prices cannot be negative");
+
+        if (offers.Any(o => o.OfferPrice < 0))
+            throw new InvalidDataException("Offer prices cannot be negative");
+
         Offers = offers.ToDictionary(o => o.Sku);
     }
 
