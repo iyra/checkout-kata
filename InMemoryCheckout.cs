@@ -1,10 +1,19 @@
 public class InMemoryCheckout : ICheckout
 {
+    // Scanned items go into a basket of (Product, quantity)
+    // We could also use an index-based system, but this is semantically nicer IMO
     public Dictionary<Product, int> Basket { get; set; }
+
+    // Catalog holds list of allowed SKUs for early scanning rejection
     private Dictionary<string, Product> Catalog { get; set; }
+
+    // Offers indexed by SKU for fast lookup during receipt calculation
+    private Dictionary<string, Offer> Offers { get; set; }
+
+    // Receipt is the log of prices and discounts; this could be done more basically with a running total instead
     private List<ReceiptLine> Receipt { get; set; }
 
-    public InMemoryCheckout(List<Product> validProducts)
+    public InMemoryCheckout(List<Product> validProducts, List<Offer> offers)
     {
         Basket = [];
         Receipt = [];
@@ -15,8 +24,16 @@ public class InMemoryCheckout : ICheckout
         }
         catch (ArgumentException e)
         {
+            // Design decision to allow one SKU per name; a more advanced system might use a hidden primary key
             throw new InvalidDataException($"Product catalog cannot contain duplicate SKUs: {e}");
         }
+
+        Offers = offers.ToDictionary(o => o.Sku);
+    }
+
+    public void UpdateOffers(List<Offer> offers)
+    {
+        Offers = offers.ToDictionary(o => o.Sku);
     }
 
     public void Scan(string Sku)
@@ -37,21 +54,23 @@ public class InMemoryCheckout : ICheckout
     {
         var lines = new List<ReceiptLine>();
         var totalDiscount = 0m;
-        if (product.Offers.Any())
+        if (Offers.TryGetValue(product.Sku, out var offer))
         {
-            var offer = product.Offers.First();
             var promotionGroups = quantity / offer.OfferQuantity; // how many times the offer can apply given the quantity of product
+            // Integer division does a kind of floor for us
 
             var normalPricePerGroup = product.UnitPrice * offer.OfferQuantity;
             var discountPerGroup = normalPricePerGroup - offer.OfferPrice;
             totalDiscount = promotionGroups * discountPerGroup;
         }
 
+        // Add individual items to the receipt (could also do one bulk insert here, but it's a design decision)
         for (var i = 0; i < quantity; i++)
         {
             lines.Add(new(product.Sku, product.UnitPrice, IsDiscount: false));
         }
 
+        // Add discount value as a pseudo-SKU for the receipt. If we ever wanted to display this to a customer, it can just be read off
         if (totalDiscount > 0)
         {
             lines.Add(new($"Bulk discount ${product.Sku}", totalDiscount, IsDiscount: true));
@@ -80,21 +99,3 @@ public class InMemoryCheckout : ICheckout
 
     public decimal GetTotalPrice() => GetReceiptTotal(); // Trigger receipt generation every time we want an up to date price
 }
-
-/*
-A - $5, 3 for 10
-
-add A
-add A
-add A - discountable detected
-X = get price without discount (product.UnitPrice * offer.OfferQuantity) = 5 * 3 = $15
-Y = get price with discount (offer.OfferPrice) = $10
-saving = X - Y = $5
-receipt.Add(new ReceiptItem(Product = null, Discount = $5))
-
-A $5
-A $5
-A $5
-A -$5
-
-*/
