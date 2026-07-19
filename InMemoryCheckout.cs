@@ -21,11 +21,12 @@ public class InMemoryCheckout : ICheckout
         try
         {
             Catalog = validProducts.ToDictionary(p => p.Sku);
+            Offers = offers.ToDictionary(o => o.Sku);
         }
         catch (ArgumentException e)
         {
             // Design decision to allow one SKU per name; a more advanced system might use a hidden primary key
-            throw new InvalidDataException($"Product catalog cannot contain duplicate SKUs: {e}");
+            throw new InvalidDataException($"Product catalog or offers cannot contain duplicate SKUs: {e}");
         }
 
         if (validProducts.Any(p => p.UnitPrice < 0))
@@ -33,8 +34,6 @@ public class InMemoryCheckout : ICheckout
 
         if (offers.Any(o => o.OfferPrice < 0))
             throw new InvalidDataException("Offer prices cannot be negative");
-
-        Offers = offers.ToDictionary(o => o.Sku);
     }
 
     public void UpdateOffers(List<Offer> offers)

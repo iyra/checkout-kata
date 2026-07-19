@@ -213,6 +213,17 @@ public class CheckoutTests
     }
 
     [Fact]
+    public void CheckDuplicateOfferSkuThrows()
+    {
+        // arrange two offers for the same SKU
+        var products = new List<Product>() { aProduct };
+        var duplicateOffers = new List<Offer> { new("A", 3, 130m), new("A", 2, 90m) };
+
+        // Act and assert that only one offer per SKU is allowed
+        Assert.Throws<InvalidDataException>(() => new InMemoryCheckout(products, duplicateOffers));
+    }
+
+    [Fact]
     public void CheckGetTotalPriceCalledTwiceReturnsSameValue()
     {
         // arrange
