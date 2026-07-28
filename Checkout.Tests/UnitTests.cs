@@ -21,12 +21,8 @@ public class CheckoutTests
         checkout.Scan("B");
         checkout.Scan("B");
 
-        // assert
-        Assert.Contains(aProduct, checkout.Basket);
-        Assert.Equal(1, checkout.Basket[aProduct]);
-
-        Assert.Contains(bProduct, checkout.Basket);
-        Assert.Equal(2, checkout.Basket[bProduct]);
+        // assert via total: 1 A at 50 + 2 B's at 2 for 35
+        Assert.Equal(50m + 35m, checkout.GetTotalPrice());
     }
 
     [Fact]
@@ -221,6 +217,29 @@ public class CheckoutTests
 
         // Act and assert that only one offer per SKU is allowed
         Assert.Throws<InvalidDataException>(() => new InMemoryCheckout(products, duplicateOffers));
+    }
+
+    [Fact]
+    public void CheckUpdateOffersWithDuplicateSkuThrows()
+    {
+        // arrange
+        var products = new List<Product>() { aProduct };
+        var checkout = new InMemoryCheckout(products, []);
+        var duplicateOffers = new List<Offer> { new("A", 3, 130m), new("A", 2, 90m) };
+
+        // act and assert that duplicate SKUs in UpdateOffers are rejected
+        Assert.Throws<InvalidDataException>(() => checkout.UpdateOffers(duplicateOffers));
+    }
+
+    [Fact]
+    public void CheckZeroOfferQuantityThrows()
+    {
+        // arrange an offer with quantity zero, which would cause division by zero when calculating promotions
+        var products = new List<Product>() { aProduct };
+        var zeroQuantityOffer = new Offer("A", 0, 130m);
+
+        // act and assert
+        Assert.Throws<InvalidDataException>(() => new InMemoryCheckout(products, [zeroQuantityOffer]));
     }
 
     [Fact]

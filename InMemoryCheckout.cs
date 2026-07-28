@@ -2,7 +2,7 @@ public class InMemoryCheckout : ICheckout
 {
     // Scanned items go into a basket of (Product, quantity)
     // We could also use an index-based system, but this is semantically nicer IMO
-    public Dictionary<Product, int> Basket { get; set; }
+    private Dictionary<Product, int> Basket { get; set; }
 
     // Catalog holds list of allowed SKUs for early scanning rejection
     private Dictionary<string, Product> Catalog { get; set; }
@@ -34,11 +34,21 @@ public class InMemoryCheckout : ICheckout
 
         if (offers.Any(o => o.OfferPrice < 0))
             throw new InvalidDataException("Offer prices cannot be negative");
+
+        if (offers.Any(o => o.OfferQuantity <= 0))
+            throw new InvalidDataException("Offer quantity must be greater than zero");
     }
 
     public void UpdateOffers(List<Offer> offers)
     {
-        Offers = offers.ToDictionary(o => o.Sku);
+        try
+        {
+            Offers = offers.ToDictionary(o => o.Sku);
+        }
+        catch (ArgumentException e)
+        {
+            throw new InvalidDataException($"Product catalog or offers cannot contain duplicate SKUs: {e}");
+        }
     }
 
     public void Scan(string Sku)
